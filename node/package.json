@@ -1,0 +1,34 @@
+{
+    "name": "sprint-racebot",
+    "version": "0.0.1",
+    "description": "A Discord bot for the SPRINT racing league.",
+    "homepage": "https://github.com/roncli/sprint-racebot",
+    "bugs": {
+        "url": "https://github.com/roncli/sprint-racebot/issues",
+        "email": "roncli@roncli.com"
+    },
+    "license": "MIT",
+    "author": {
+        "name": "Ronald M. Clifford",
+        "email": "roncli@roncli.com",
+        "url": "https://roncli.com"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/roncli/sprint-racebot.git"
+    },
+    "dependencies": {
+        "@roncli/node-application-insights-logger": "roncli/node-application-insights-logger#v1.0.17",
+        "discord.js": "14.14.1"
+    },
+    "devDependencies": {
+        "@babel/core": "7.23.7",
+        "@babel/eslint-parser": "7.23.3",
+        "@stylistic/eslint-plugin": "1.5.4",
+        "@types/node": "20.11.5"
+    },
+    "engines": {
+        "node": ">=16.0.0"
+    },
+    "private": true
+}
