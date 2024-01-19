@@ -105,7 +105,7 @@ class Discord {
                 readied = true;
             }
 
-            raceCategory = /** @type {DiscordJs.CategoryChannel} */ (sprintGuild.channels.cache.find((r) => r.name === "Race")); // eslint-disable-line @stylistic/no-extra-parens
+            raceCategory = /** @type {DiscordJs.CategoryChannel} */ (sprintGuild.channels.cache.find((r) => r.name === "Race Rooms")); // eslint-disable-line @stylistic/no-extra-parens
             staffRole = sprintGuild.roles.cache.find((r) => r.name === "SPRINT Staff");
         });
 
@@ -145,7 +145,7 @@ class Discord {
 
             // Run the command.
             try {
-                await CommandHandler.handle(message.member, parameters);
+                await CommandHandler.handle(message.member, message.channel, parameters);
             } catch (err) {
                 if (err instanceof Warning) {
                     Log.warn(`${message.channel} ${message.member}: ${message.content} - ${err.message || err}`);
@@ -178,6 +178,37 @@ class Discord {
         }
     }
 
+    //                          #          #  #              #                          #   ##   #                             ##
+    //                          #          ## #              #                          #  #  #  #                              #
+    //  ##   ###    ##    ###  ###    ##   ## #  #  #  # #   ###    ##   ###    ##    ###  #     ###    ###  ###   ###    ##    #
+    // #     #  #  # ##  #  #   #    # ##  # ##  #  #  ####  #  #  # ##  #  #  # ##  #  #  #     #  #  #  #  #  #  #  #  # ##   #
+    // #     #     ##    # ##   #    ##    # ##  #  #  #  #  #  #  ##    #     ##    #  #  #  #  #  #  # ##  #  #  #  #  ##     #
+    //  ##   #      ##    # #    ##   ##   #  #   ###  #  #  ###    ##   #      ##    ###   ##   #  #   # #  #  #  #  #   ##   ###
+    /**
+     * Creates a new numbered channel.
+     * @param {string} name The name of the channel.
+     * @returns {Promise<DiscordJs.TextChannel>} A promise that returns the new channel.
+     */
+    static async createNumberedChannel(name) {
+        const channelSuffixes = sprintGuild.channels.cache.filter((c) => c.name.startsWith(name)).map((c) => parseInt(c.name.split("-")[1], 10)).sort((a, b) => a - b);
+
+        let suffix = 1;
+        for (let i = 0; i < channelSuffixes.length; i++) {
+            if (channelSuffixes[i] !== suffix) {
+                break;
+            }
+            suffix++;
+        }
+
+        const channel = await sprintGuild.channels.create({
+            name: `${name}-${suffix}`,
+            parent: raceCategory,
+            type: DiscordJs.ChannelType.GuildText
+        });
+
+        return channel;
+    }
+
     //             #              #  ###          #    ##       #
     //             #              #  #  #               #       #
     //  ##   # #   ###    ##    ###  ###   #  #  ##     #     ###
@@ -205,6 +236,25 @@ class Discord {
         return embed;
     }
 
+    //   #    #             #   ##          #    ##       #  #  #              #                 ###         ###      #
+    //  # #                 #  #  #               #       #  ####              #                 #  #         #       #
+    //  #    ##    ###    ###  #     #  #  ##     #     ###  ####   ##   # #   ###    ##   ###   ###   #  #   #     ###
+    // ###    #    #  #  #  #  # ##  #  #   #     #    #  #  #  #  # ##  ####  #  #  # ##  #  #  #  #  #  #   #    #  #
+    //  #     #    #  #  #  #  #  #  #  #   #     #    #  #  #  #  ##    #  #  #  #  ##    #     #  #   # #   #    #  #
+    //  #    ###   #  #   ###   ###   ###  ###   ###    ###  #  #   ##   #  #  ###    ##   #     ###     #   ###    ###
+    //                                                                                                  #
+    /**
+     * Returns the Discord user in the guild by their Discord ID.
+     * @param {string} id The ID of the Discord user.
+     * @returns {DiscordJs.GuildMember} The guild member.
+     */
+    static findGuildMemberById(id) {
+        if (!sprintGuild) {
+            return void 0;
+        }
+        return sprintGuild.members.cache.find((m) => m.id === id);
+    }
+
     //  ###  #  #   ##   #  #   ##
     // #  #  #  #  # ##  #  #  # ##
     // #  #  #  #  ##    #  #  ##
@@ -214,7 +264,7 @@ class Discord {
      * Queues a message to be sent.
      * @param {string} message The message to be sent.
      * @param {DiscordJs.TextChannel|DiscordJs.DMChannel|DiscordJs.GuildMember|DiscordJs.User|DiscordJs.GuildTextBasedChannel} channel The channel to send the message to.
-     * @returns {Promise<DiscordJs.Message>} A promise that resolves with the sent message.
+     * @returns {Promise<DiscordJs.Message>} A promise that returns the sent message.
      */
     static async queue(message, channel) {
         if (channel.id === discord.user.id) {
@@ -274,7 +324,7 @@ class Discord {
      * Queues a rich embed message to be sent.
      * @param {DiscordJs.EmbedBuilder} embed The message to be sent.
      * @param {DiscordJs.TextChannel|DiscordJs.DMChannel|DiscordJs.GuildMember|DiscordJs.User|DiscordJs.GuildTextBasedChannel} channel The channel to send the message to.
-     * @returns {Promise<DiscordJs.Message>} A promise that resolves with the sent message.
+     * @returns {Promise<DiscordJs.Message>} A promise that returns the sent message.
      */
     static async richQueue(embed, channel) {
         if (channel.id === discord.user.id) {
