@@ -34,6 +34,8 @@ class Race {
 
         await race.setup();
 
+        race.channel.setTopic("Type .help or .h for help.  See the pinned post for current race status.", "Creating a race room.");
+
         Race.races.push(race);
         return race;
     }
@@ -150,6 +152,11 @@ class Race {
      * @returns {Promise} A promise that resolves when the race room is closed.
      */
     async close(member) {
+        // Record the race results, if there were any.
+        if (this.end > 0) {
+            await postResult();
+        }
+
         // Remove this race from the races array.
         Race.races = Race.races.filter((r) => r !== this);
 
@@ -231,7 +238,7 @@ class Race {
         player.finish = Date.now();
 
         // Get the number of finished racers.
-        const finishedPlayers = this.players.filter((p) => p.finish > 0),
+        const finishedPlayers = this.players.filter((p) => p.finish > 0).sort((a, b) => a.finish - b.finish),
             finished = finishedPlayers.length;
 
         const ordinal = finished % 100 >= 11 && finished % 100 <= 13 ? "th" : finished % 10 === 1 ? "st" : finished % 10 === 2 ? "nd" : finished % 10 === 3 ? "rd" : "th";
@@ -311,7 +318,7 @@ class Race {
         }
 
         if (this.countdown) {
-            this.countdown.cancel();
+            await this.countdown.cancel();
             this.countdown = null;
         }
 
@@ -321,7 +328,7 @@ class Race {
 
         await Discord.richQueue(
             Discord.embedBuilder({
-                title: `${member} Entered`,
+                title: `${member.displayName} Entered`,
                 description: `${member} has entered!  There ${this.players.length === 1 ? "is" : "are"} now ${this.players.length} ${this.players.length === 1 ? "entry" : "entries"}, with ${this.players.filter((p) => !p.ready).length} remaining to be ready.`
             }),
             this.channel
@@ -411,7 +418,7 @@ class Race {
             this.end = Date.now();
 
             // Get the finished and forfeited racers.
-            const finishedPlayers = this.players.filter((p) => p.finish > 0),
+            const finishedPlayers = this.players.filter((p) => p.finish > 0).sort((a, b) => a.finish - b.finish),
                 forfeitPlayers = this.players.filter((p) => p.forfeit);
 
             const message = Discord.embedBuilder({
@@ -483,6 +490,14 @@ class Race {
 
         this.players = this.players.filter((p) => p.discordId !== kickedMember.id);
 
+        await Discord.richQueue(
+            Discord.embedBuilder({
+                title: "Player Kicked",
+                description: `${kickedMember} has been removed from the race.`
+            }),
+            this.channel
+        );
+
         if (this.start === 0) {
             // Get the number of unreadied racers.
             const unreadied = this.players.filter((p) => !p.ready).length;
@@ -498,7 +513,7 @@ class Race {
                 this.end = Date.now();
 
                 // Get the finished and forfeited racers.
-                const finishedPlayers = this.players.filter((p) => p.finish > 0),
+                const finishedPlayers = this.players.filter((p) => p.finish > 0).sort((a, b) => a.finish - b.finish),
                     forfeitPlayers = this.players.filter((p) => p.forfeit);
 
                 const message = Discord.embedBuilder({
@@ -598,6 +613,49 @@ class Race {
         return player;
     }
 
+    //                     #    ###                      ##     #
+    //                     #    #  #                      #     #
+    // ###    ##    ###   ###   #  #   ##    ###   #  #   #    ###
+    // #  #  #  #  ##      #    ###   # ##  ##     #  #   #     #
+    // #  #  #  #    ##    #    # #   ##      ##   #  #   #     #
+    // ###    ##   ###      ##  #  #   ##   ###     ###  ###     ##
+    // #
+    /**
+     * Posts the results to the results channel.
+     * @returns {Promise} A promise that resolves when the results have been posted.
+     */
+    async postResult() {
+        const message = Discord.embedBuilder({
+            title: "Completed Race",
+            description: `Race completed <t:${Math.floor(this.end / 1000)}:R>\nSeed: ${this.seed}`,
+            fields: []
+        });
+
+        const finishedPlayers = this.players.filter((p) => p.finish > 0).sort((a, b) => a.finish - b.finish),
+            forfeitPlayers = this.players.filter((p) => p.forfeit);
+
+        if (finishedPlayers.length > 0) {
+            message.addFields({
+                name: "Standings",
+                value: finishedPlayers.map((p, index) => `${index + 1}) **${Race.formatTime(p.finish - this.start)}** - <@${p.discordId}>`).join("\n"),
+                inline: true
+            });
+        }
+
+        if (forfeitPlayers.length > 0) {
+            message.addFields({
+                name: "Forfeited Players",
+                value: forfeitPlayers.map((p) => `<@${p.discordId}>`).join("\n"),
+                inline: true
+            });
+        }
+
+        await Discord.richQueue(
+            message,
+            Discord.resultsChannel
+        );
+    }
+
     //                      #
     //                      #
     // ###    ##    ###   ###  #  #
@@ -628,14 +686,14 @@ class Race {
 
             await Discord.richQueue(
                 Discord.embedBuilder({
-                    title: `${member} Ready`,
+                    title: `${member.displayName} Ready`,
                     description: `${member} has is now ready!  There ${this.players.length === 1 ? "is" : "are"} ${this.players.length} ${this.players.length === 1 ? "entry" : "entries"}, with ${this.players.filter((p) => !p.ready).length} remaining to be ready.`
                 }),
                 this.channel
             );
         } else {
             if (this.countdown) {
-                this.countdown.cancel();
+                await this.countdown.cancel();
                 this.countdown = null;
             }
 
@@ -646,7 +704,7 @@ class Race {
 
             await Discord.richQueue(
                 Discord.embedBuilder({
-                    title: `${member} Entered and Ready`,
+                    title: `${member.displayName} Entered and Ready`,
                     description: `${member} has entered and is now ready!  There ${this.players.length === 1 ? "is" : "are"} ${this.players.length} ${this.players.length === 1 ? "entry" : "entries"}, with ${this.players.filter((p) => !p.ready).length} remaining to be ready.`
                 }),
                 this.channel
@@ -700,11 +758,16 @@ class Race {
      * @returns {Promise} A promise that resolves when the race has been setup.
      */
     async setup() {
+        if (this.end > 0) {
+            await this.postResult();
+        }
+
         this.seed = Math.floor(Math.random() * 100000000).toString().padStart(8, "0");
         this.players = [];
         this.started = false;
         this.start = 0;
         this.end = 0;
+        this.countdown = null;
 
         this.pinnedPost = await Discord.richQueue(
             Discord.embedBuilder({
@@ -772,7 +835,7 @@ class Race {
             return;
         }
 
-        Discord.queue(`The current race time is **${Race.formatTime(Date.now() - this.start)}**.`, this.channel);
+        await Discord.queue(`The current race time is **${Race.formatTime(Date.now() - this.start)}**.`, this.channel);
     }
 
     //                                  #
@@ -812,7 +875,7 @@ class Race {
         }
 
         if (this.countdown) {
-            this.countdown.cancel();
+            await this.countdown.cancel();
             this.countdown = null;
         }
 
@@ -820,7 +883,7 @@ class Race {
 
         await Discord.richQueue(
             Discord.embedBuilder({
-                title: `${member} Unready`,
+                title: `${member.displayName} Unready`,
                 description: `${member} is no longer ready.  There ${this.players.length === 1 ? "is" : "are"} ${this.players.length} ${this.players.length === 1 ? "entry" : "entries"}, with ${this.players.filter((p) => !p.ready).length} remaining to be ready.`
             }),
             this.channel
@@ -898,7 +961,7 @@ class Race {
             // Build message.
             const message = Discord.embedBuilder({
                 title: "Race Starting",
-                description: `Seed: ${this.seed}\nStarting <t:${this.start}:R>`,
+                description: `Seed: ${this.seed}\nStarting <t:${Math.floor(this.start / 1000)}:R>`,
                 fields: [
                     {
                         name: "Players",
@@ -929,7 +992,7 @@ class Race {
 
             const message = Discord.embedBuilder({
                 title: "Race Started",
-                description: `Seed: ${this.seed}\nStarted <t:${this.start}:R>`,
+                description: `Seed: ${this.seed}\nStarted <t:${Math.floor(this.start / 1000)}:R>`,
                 fields: []
             });
 
@@ -959,7 +1022,7 @@ class Race {
 
             message.addFields({
                 name: "Commands",
-                value: "`.done` or `.d` - Indicate you completed the race\n`.forfeit` or `.f` - Forfeit the race\n`.undone` or `.u` - Reenter the race if you accidentally completed or forfeited\n`.time` - Get the time elapsed in the race."
+                value: "`.done` or `.d` - Indicate you completed the race\n`.forfeit` or `.f` - Forfeit the race\n`.undone` or `.u` - Reenter the race if you accidentally completed or forfeited\n`.time` or `.t` - Get the time elapsed in the race."
             });
 
             await Discord.richEdit(this.pinnedPost, message);
@@ -978,7 +1041,7 @@ class Race {
 
             const message = Discord.embedBuilder({
                 title: "Race Complete",
-                description: `Seed: ${this.seed}\nStarted <t:${this.start}:R>\nEnded <t:${this.end}:R>`,
+                description: `Seed: ${this.seed}\nStarted <t:${Math.floor(this.start / 1000)}:R>\nEnded <t:${Math.floor(this.end / 1000)}:R>`,
                 fields: []
             });
 
@@ -1048,7 +1111,7 @@ class Race {
 
         await Discord.richQueue(
             Discord.embedBuilder({
-                title: `${member} Withdrawn`,
+                title: `${member.displayName} Withdrawn`,
                 description: `${member} has withdrawn.  There ${this.players.length === 1 ? "is" : "are"} now ${this.players.length} ${this.players.length === 1 ? "entry" : "entries"}, with ${remainingPlayers.length} remaining to be ready.`
             }),
             this.channel
@@ -1059,7 +1122,7 @@ class Race {
         }
 
         if (this.countdown && this.players.length < 2) {
-            this.countdown.cancel();
+            await this.countdown.cancel();
             this.countdown = null;
         }
 

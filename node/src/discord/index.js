@@ -9,16 +9,20 @@ const DiscordJs = require("discord.js"),
     discord = new DiscordJs.Client({
         intents: [
             DiscordJs.IntentsBitField.Flags.Guilds,
-            DiscordJs.IntentsBitField.Flags.GuildMessages
+            DiscordJs.IntentsBitField.Flags.GuildMessages,
+            DiscordJs.IntentsBitField.Flags.MessageContent
         ],
         partials: [DiscordJs.Partials.Channel]
     }),
-    messageParse = /\.(?<command>[a-z]+)\s*(?<parameters>.*)/i;
+    messageParse = /^\.(?<command>[a-z]+)\s*(?<parameters>.*)/i;
 
 let readied = false;
 
 /** @type {DiscordJs.CategoryChannel} */
 let raceCategory;
+
+/** @type {DiscordJs.TextChannel} */
+let resultsChannel;
 
 /** @type {DiscordJs.Guild} */
 let sprintGuild;
@@ -70,6 +74,20 @@ class Discord {
         return raceCategory;
     }
 
+    //                          ##     #            ##   #                             ##
+    //                           #     #           #  #  #                              #
+    // ###    ##    ###   #  #   #    ###    ###   #     ###    ###  ###   ###    ##    #
+    // #  #  # ##  ##     #  #   #     #    ##     #     #  #  #  #  #  #  #  #  # ##   #
+    // #     ##      ##   #  #   #     #      ##   #  #  #  #  # ##  #  #  #  #  ##     #
+    // #      ##   ###     ###  ###     ##  ###     ##   #  #   # #  #  #  #  #   ##   ###
+    /**
+     * Returns the results channel.
+     * @returns {DiscordJs.TextChannel} The results channel.
+     */
+    static get resultsChannel() {
+        return resultsChannel;
+    }
+
     //         #            #     #   ###         ##
     //         #           # #   # #  #  #         #
     //  ###   ###    ###   #     #    #  #   ##    #     ##
@@ -105,7 +123,8 @@ class Discord {
                 readied = true;
             }
 
-            raceCategory = /** @type {DiscordJs.CategoryChannel} */ (sprintGuild.channels.cache.find((r) => r.name === "Race Rooms")); // eslint-disable-line @stylistic/no-extra-parens
+            raceCategory = /** @type {DiscordJs.CategoryChannel} */ (sprintGuild.channels.cache.find((c) => c.name === "Race Rooms")); // eslint-disable-line @stylistic/no-extra-parens
+            resultsChannel = /** @type {DiscordJs.TextChannel} */ (sprintGuild.channels.cache.find((c) => c.name === "racebot-results")); // eslint-disable-line @stylistic/no-extra-parens
             staffRole = sprintGuild.roles.cache.find((r) => r.name === "SPRINT Staff");
         });
 
@@ -190,7 +209,7 @@ class Discord {
      * @returns {Promise<DiscordJs.TextChannel>} A promise that returns the new channel.
      */
     static async createNumberedChannel(name) {
-        const channelSuffixes = sprintGuild.channels.cache.filter((c) => c.name.startsWith(name)).map((c) => parseInt(c.name.split("-")[1], 10)).sort((a, b) => a - b);
+        const channelSuffixes = sprintGuild.channels.cache.filter((c) => c.parentId && c.parentId === raceCategory.id && c.name.startsWith(name)).map((c) => parseInt(c.name.split("-")[1], 10)).sort((a, b) => a - b);
 
         let suffix = 1;
         for (let i = 0; i < channelSuffixes.length; i++) {
@@ -273,7 +292,7 @@ class Discord {
 
         let msg;
         try {
-            msg = await Discord.richQueue(Discord.embedBuilder({description: message}), channel);
+            msg = await channel.send(message);
         } catch {}
         return msg;
     }

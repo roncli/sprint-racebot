@@ -31,12 +31,15 @@ class Countdown {
 
         this.race.start = Date.now() + 10000;
 
-        Discord.embedBuilder({
-            title: "Race Starts in 10 Seconds",
-            description: "Everyone is ready!  The race will start in 10 seconds!"
-        });
-
         setTimeout(async () => {
+            await Discord.richQueue(
+                Discord.embedBuilder({
+                    title: "Race Starts in 10 Seconds",
+                    description: "Everyone is ready!  The race will start in 10 seconds!"
+                }),
+                this.race.channel
+            );
+
             if (this.cancelled) {
                 return;
             }
@@ -72,9 +75,9 @@ class Countdown {
     //  ##    # #  #  #   ##    ##   ###
     /**
      * Cancels a countdown.
-     * @returns {void}
+     * @returns {Promise} A promise that resolves when the countdown is cancelled.
      */
-    cancel() {
+    async cancel() {
         if (this.race.started) {
             return;
         }
@@ -82,7 +85,7 @@ class Countdown {
         this.cancelled = true;
         this.race.start = 0;
 
-        Discord.queue("Countdown aborted.", this.race.channel);
+        await Discord.queue("Countdown aborted.", this.race.channel);
     }
 }
 

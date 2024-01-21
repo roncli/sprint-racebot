@@ -39,7 +39,7 @@ class HelpCmd {
                 fields: [
                     {
                         name: "General Commands",
-                        value: "`.help` - This help text.\n`.race` - Start a new race.",
+                        value: "`.help`/`.h` - This help text.\n`.race` - Start a new race.",
                         inline: true
                     },
                     {
@@ -48,7 +48,7 @@ class HelpCmd {
                     },
                     {
                         name: "Race Room Commands - During the Race",
-                        value: "`.done`/`.d` - Indicate that you have finished the race.\n`.forfeit`/`.f` - Forfeit the race.\n`.notdone`/`.n` - If you did `.done` or `.forfeit`, this undoes that, re-entering you into the race.\n`.time` - Get the current elapsed time of the race."
+                        value: "`.done`/`.d` - Indicate that you have finished the race.\n`.forfeit`/`.f` - Forfeit the race.\n`.notdone`/`.n` - If you did `.done` or `.forfeit`, this undoes that, re-entering you into the race.\n`.time`/`.t` - Get the current elapsed time of the race."
                     },
                     {
                         name: "Race Room Commands - After the Race",
