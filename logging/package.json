@@ -1,6 +1,6 @@
 {
     "name": "sprint-racebot-logging",
-    "version": "3.0.2",
+    "version": "1.0.0",
     "description": "gelf logging for sprint-racebot.",
     "homepage": "https://github.com/roncli/sprint-racebot",
     "bugs": {

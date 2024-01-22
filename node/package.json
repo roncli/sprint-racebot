@@ -1,6 +1,6 @@
 {
     "name": "sprint-racebot",
-    "version": "0.0.1",
+    "version": "1.0.0",
     "description": "A Discord bot for the SPRINT racing league.",
     "homepage": "https://github.com/roncli/sprint-racebot",
     "bugs": {
