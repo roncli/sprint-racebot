@@ -26,15 +26,18 @@ class Race {
     //  ##   #      ##    # #    ##   ##   #  #   # #   ##    ##
     /**
      * Creates a race.
+     * @param {string} parameters The race parameters.
      * @returns {Promise<Race>} A promise that returns the created race.
      */
-    static async createRace() {
+    static async createRace(parameters) {
         const channel = await Discord.createNumberedChannel("race"),
             race = new Race(channel);
 
+        race.parameters = parameters;
+
         await race.setup();
 
-        race.channel.setTopic("Type .help or .h for help.  See the pinned post for current race status.", "Creating a race room.");
+        race.channel.setTopic(`${parameters ? `Race settings: ${parameters} | ` : ""}Type .help or .h for help | See the pinned post for current race status.`, "Creating a race room.");
 
         Race.races.push(race);
         return race;
@@ -138,6 +141,12 @@ class Race {
          * @type {NodeJS.Timeout}
          */
         this.autoCloseTimeout = null;
+
+        /**
+         * The race parameters.
+         * @type {string}
+         */
+        this.parameters = "";
     }
 
     //       ##
@@ -152,9 +161,14 @@ class Race {
      * @returns {Promise} A promise that resolves when the race room is closed.
      */
     async close(member) {
+        if (this.autoCloseTimeout) {
+            clearTimeout(this.autoCloseTimeout);
+            this.autoCloseTimeout = null;
+        }
+
         // Record the race results, if there were any.
         if (this.end > 0) {
-            await postResult();
+            await this.postResult();
         }
 
         // Remove this race from the races array.
@@ -190,17 +204,6 @@ class Race {
             return void 0;
         }
 
-        if (this.end > 0) {
-            await Discord.richQueue(
-                Discord.embedBuilder({
-                    title: "Race Already Finished",
-                    description: `Sorry, ${member}, but this race is already finished.`
-                }),
-                this.channel
-            );
-            return void 0;
-        }
-
         const player = this.players.find((p) => p.discordId === member.id);
         if (!player) {
             await Discord.richQueue(
@@ -224,17 +227,6 @@ class Race {
             return void 0;
         }
 
-        if (player.forfeit) {
-            await Discord.richQueue(
-                Discord.embedBuilder({
-                    title: "Already Forfeited",
-                    description: `Sorry, ${member}, but you have already forfeited.`
-                }),
-                this.channel
-            );
-            return void 0;
-        }
-
         player.finish = Date.now();
 
         // Get the number of finished racers.
@@ -242,7 +234,11 @@ class Race {
             finished = finishedPlayers.length;
 
         const ordinal = finished % 100 >= 11 && finished % 100 <= 13 ? "th" : finished % 10 === 1 ? "st" : finished % 10 === 2 ? "nd" : finished % 10 === 3 ? "rd" : "th";
-        await Discord.queue(`${member} has finished ${finished}${ordinal} with **${Race.formatTime(player.finish - this.start)}**.`, this.channel);
+        await Discord.queue(`${member} has ${player.forfeit ? "unforfeited, and " : ""}finished ${finished}${ordinal} with **${Race.formatTime(player.finish - this.start)}**.`, this.channel);
+
+        if (player.forfeit) {
+            player.forfeit = false;
+        }
 
         // Get the number of racers still racing.
         const racing = this.players.filter((p) => p.finish === 0 && !p.forfeit).length;
@@ -627,7 +623,7 @@ class Race {
     async postResult() {
         const message = Discord.embedBuilder({
             title: "Completed Race",
-            description: `Race completed <t:${Math.floor(this.end / 1000)}:R>\nSeed: ${this.seed}`,
+            description: `Race completed <t:${Math.floor(this.end / 1000)}:R>\nSeed: ${this.seed}\nSettings: ${this.parameters}`,
             fields: []
         });
 
@@ -772,7 +768,7 @@ class Race {
         this.pinnedPost = await Discord.richQueue(
             Discord.embedBuilder({
                 title: "New Race",
-                description: `Seed: ${this.seed}`,
+                description: `Seed: ${this.seed}\nSettings: ${this.parameters}`,
                 fields: [
                     {
                         name: "Commands",
@@ -926,7 +922,7 @@ class Race {
             // Build message.
             const message = Discord.embedBuilder({
                 title: "New Race",
-                description: `Seed: ${this.seed}`,
+                description: `Seed: ${this.seed}\nSettings: ${this.parameters}`,
                 fields: []
             });
 
@@ -961,7 +957,7 @@ class Race {
             // Build message.
             const message = Discord.embedBuilder({
                 title: "Race Starting",
-                description: `Seed: ${this.seed}\nStarting <t:${Math.floor(this.start / 1000)}:R>`,
+                description: `Seed: ${this.seed}\nSettings: ${this.parameters}\nStarting <t:${Math.floor(this.start / 1000)}:R>`,
                 fields: [
                     {
                         name: "Players",
@@ -992,7 +988,7 @@ class Race {
 
             const message = Discord.embedBuilder({
                 title: "Race Started",
-                description: `Seed: ${this.seed}\nStarted <t:${Math.floor(this.start / 1000)}:R>`,
+                description: `Seed: ${this.seed}\nSettings: ${this.parameters}\nStarted <t:${Math.floor(this.start / 1000)}:R>`,
                 fields: []
             });
 
@@ -1041,7 +1037,7 @@ class Race {
 
             const message = Discord.embedBuilder({
                 title: "Race Complete",
-                description: `Seed: ${this.seed}\nStarted <t:${Math.floor(this.start / 1000)}:R>\nEnded <t:${Math.floor(this.end / 1000)}:R>`,
+                description: `Seed: ${this.seed}\nSettings: ${this.parameters}\nStarted <t:${Math.floor(this.start / 1000)}:R>\nEnded <t:${Math.floor(this.end / 1000)}:R>`,
                 fields: []
             });
 
@@ -1063,7 +1059,7 @@ class Race {
 
             message.addFields({
                 name: "Commands",
-                value: "`.rematch` - Start a new race in this channel.\n`.undone` or `.u` - Reenter the race if you accidentally completed or forfeited"
+                value: "`.rematch` - Start a new race in this channel with the same settings but on a different seed.\n`.undone` or `.u` - Reenter the race if you accidentally completed or forfeited"
             });
 
             await Discord.richEdit(this.pinnedPost, message);

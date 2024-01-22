@@ -39,7 +39,7 @@ class HelpCmd {
                 fields: [
                     {
                         name: "General Commands",
-                        value: "`.help`/`.h` - This help text.\n`.race` - Start a new race.",
+                        value: "`.help`/`.h` - This help text.\n`.race <settings>` - Start a new race.  The settings for the race must be entered here.  For instance, `.race F5 Null Hard Mild`",
                         inline: true
                     },
                     {
@@ -52,7 +52,7 @@ class HelpCmd {
                     },
                     {
                         name: "Race Room Commands - After the Race",
-                        value: "`.notdone`/`.n` - If you did `.done` or `.forfeit`, this undoes that, continuing the race and re-entering you into it.\n`.rematch` - Starts a new race in the same race channel."
+                        value: "`.notdone`/`.n` - If you did `.done` or `.forfeit`, this undoes that, continuing the race and re-entering you into it.\n`.rematch` - Start a new race in this channel with the same settings but on a different seed."
                     },
                     {
                         name: "Staff Commands",

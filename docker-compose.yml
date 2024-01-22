@@ -24,8 +24,6 @@ services:
     build: ./node
     depends_on:
       - logging
-      - db
-      - redis
     networks:
       - sprint-racebot-network
     logging:

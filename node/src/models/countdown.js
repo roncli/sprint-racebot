@@ -31,7 +31,7 @@ class Countdown {
 
         this.race.start = Date.now() + 10000;
 
-        setTimeout(async () => {
+        (async () => {
             await Discord.richQueue(
                 Discord.embedBuilder({
                     title: "Race Starts in 10 Seconds",
@@ -39,7 +39,9 @@ class Countdown {
                 }),
                 this.race.channel
             );
+        })();
 
+        setTimeout(async () => {
             if (this.cancelled) {
                 return;
             }
