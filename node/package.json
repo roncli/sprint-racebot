@@ -24,7 +24,7 @@
     "devDependencies": {
         "@babel/core": "7.24.0",
         "@babel/eslint-parser": "7.23.10",
-        "@stylistic/eslint-plugin": "1.5.4",
+        "@stylistic/eslint-plugin": "1.6.3",
         "@types/node": "20.11.26"
     },
     "engines": {
