@@ -22,7 +22,7 @@
         "discord.js": "14.14.1"
     },
     "devDependencies": {
-        "@babel/core": "8.0.1",
+        "@babel/core": "8.0.5",
         "@babel/eslint-parser": "8.0.1",
         "@stylistic/eslint-plugin": "1.5.4",
         "@types/node": "26.4.1"
